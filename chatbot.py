@@ -33,19 +33,8 @@ def vector_qa(pdfs):
     chunkdocuments = text_splitter.split_documents(documents)
     vectordb = FAISS.from_documents(chunkdocuments, OpenAIEmbeddings())
 
-    #Template que se le va a pasar ael retrieval para que obtenga la info que quiero (A/B test)
-    prompt_template = """Usa el siguiente contexto para responder la pregunta al final. Si no la sabes o la encuentras no la trates de inventar.
-
-    {context}
-
-    Pregunta: {question}
-    Tu respuesta:"""
-    PROMPT = PromptTemplate(
-        template=prompt_template, input_variables=["context", "question"]
-    )
-    chain_type_kwargs = {"prompt": PROMPT}
-    #qa impulse es la herramienta con la que haremos retrieval de documentos, retorna texto
-    qa_marca = RetrievalQA.from_chain_type(llm=ChatOpenAI(model_name = "gpt-3.5-turbo-16k"), chain_type= "stuff", retriever = vectordb.as_retriever(), chain_type_kwargs=chain_type_kwargs)
+    #qa marca es la herramienta con la que haremos retrieval de documentos, retorna texto
+    qa_marca = RetrievalQA.from_chain_type(llm=ChatOpenAI(model_name = "gpt-3.5-turbo-16k"), chain_type= "stuff", retriever = vectordb.as_retriever())
     
     return qa_marca
 
@@ -66,7 +55,7 @@ def chat_prompt():
 
     return cht_prompt
 
-def chat(qa_marca):
+def chat_memory(qa_marca):
     #Inicializar la memoria
     memory = ConversationBufferMemory(memory_key="chat_history",input_key="text", return_messages=True)
     chat=ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
@@ -79,6 +68,15 @@ def chat(qa_marca):
         resp_ia = chain.run(question = pregunta, text = pregunta, qa_answer = respuesta_impulse)
         print(resp_ia)
 
+
+def chat(qa_marca):
+    while True:
+        pregunta = input()
+        if pregunta == "exit":
+            break
+        print(qa_marca.run(pregunta))
+
+        
 if __name__ == "__main__":
     pdfs = [element for element in os.listdir("PDFS")]
     qa = vector_qa(pdfs=pdfs)  
