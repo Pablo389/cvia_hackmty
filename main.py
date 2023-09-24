@@ -87,7 +87,6 @@ with st.container():
             """
         )
                     
-    
 with st.container():
                 #Espacio para la pregunta del usuario
                 user_question = st.text_input("Hazme una pregunta sobre tus documentos:")
@@ -103,10 +102,6 @@ with st.container():
                     #Imprimir en la terminal
                     print(response)
                     
-                    
-            
-
-
 with st.container():
     if response:            
         st.write(response)

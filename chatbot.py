@@ -46,10 +46,10 @@ def vector_qa(pdf_docs):
         length_function=len
     )
     chunks = text_splitter.split_text(text)
-    vectordb = FAISS.from_texts(texts=chunks, embedding=OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY))
+    vectordb = FAISS.from_texts(texts=chunks, embedding=OpenAIEmbeddings())
 
     #qa marca es la herramienta con la que haremos retrieval de documentos, retorna texto
-    qa_marca = RetrievalQA.from_chain_type(llm=ChatOpenAI(openai_api_key=OPENAI_API_KEY,model_name = "gpt-3.5-turbo-16k"), chain_type= "stuff", retriever = vectordb.as_retriever())
+    qa_marca = RetrievalQA.from_chain_type(llm=ChatOpenAI(model_name = "gpt-3.5-turbo-16k"), chain_type= "stuff", retriever = vectordb.as_retriever())
     
     return qa_marca
 
@@ -70,10 +70,10 @@ def chat_prompt():
 
     return cht_prompt
 
-def chat_memory(qa_marca):
+def chat_memory():
     #Inicializar la memoria
     memory = ConversationBufferMemory(memory_key="chat_history",input_key="text", return_messages=True)
-    chat=ChatOpenAI(openai_api_key=OPENAI_API_KEY,temperature=0, model_name="gpt-3.5-turbo-16k")
+    chat=ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
     chain = LLMChain(llm=chat, prompt=chat_prompt(), memory=memory, verbose=True)
     while True:
         pregunta = input()
