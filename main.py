@@ -1,6 +1,8 @@
 import requests
 import streamlit as st
 from streamlit_lottie import st_lottie
+#Importar archivo del chatbot
+import chatbot
 from PIL import Image
 
 
@@ -34,6 +36,9 @@ def local_css(file_name):
     """
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+        
+        
+
 
 local_css("style/style.css")
 lottie_file ="https://assets9.lottiefiles.com/packages/lf20_ggwq3ysg.json"
@@ -64,11 +69,15 @@ with st.container():
         st.write("Documentos subidos:")
         for file in uploaded_files:
             st.write(f"Nombre: {file.name}, Tamaño: {file.size} bytes")
+    
+        print(uploaded_files)
+        qa = chatbot.vector_qa(uploaded_files)
             
             
 #Contenedor para el chatbot
-if uploaded_files:
-    with st.container():
+
+with st.container():
+        response = " "
         st.write("---")
         st.header("Chatbot")
         st.write(
@@ -76,8 +85,31 @@ if uploaded_files:
             Hola, soy el chatbot de CVIA, estoy aquí para ayudarte a analizar tus documentos y encontrar el mejor talento para tu empresa. 
             """
         )
-        if st.button("Analizar"):
-            st.write("Analizando...")
+                    
+    
+with st.container():
+                #Espacio para la pregunta del usuario
+                user_question = st.text_input("Hazme una pregunta sobre tus documentos:")
+                
+                #Imprimir la pregunta en consola
+                if user_question:
+                    print(user_question)
+                
+                #Espacio para la respuesta del chatbot
+                if user_question:
+                    response = qa.run(user_question)
+                    
+                    #Imprimir en la terminal
+                    print(response)
+                    
+                    
+            
+
+
+with st.container():
+    if response:            
+        st.write(response)
+            
             
 
 

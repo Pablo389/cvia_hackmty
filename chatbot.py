@@ -4,7 +4,7 @@ from langchain.llms import OpenAI
 from langchain import LLMChain
 from langchain.prompts.prompt import PromptTemplate
 from langchain.memory import ConversationBufferMemory
-from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders import PyPDFLoader, TextLoader
 from langchain.text_splitter import CharacterTextSplitter
 
 #Librerias para el embedding y retrieval
@@ -21,31 +21,46 @@ from langchain.prompts.chat import (
 )
 
 import os
+import streamlit
+from PyPDF2 import PdfReader
 
-def vector_qa(pdfs):
-    documents = []
-    for element in pdfs:
-        loader = PyPDFLoader("PDFS/" + element)
-        documents.extend(loader.load())
+#Constante api open ai key
 
-    #Obtener los vectores de los documentos
-    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-    chunkdocuments = text_splitter.split_documents(documents)
-    vectordb = FAISS.from_documents(chunkdocuments, OpenAIEmbeddings())
+def vector_qa(pdf_docs):
+    text = ""
+    contador = 0
+    for pdf in pdf_docs:
+        contador += 1
+        text += "INICIO DEL CV {contador}"
+        pdf_reader = PdfReader(pdf)
+        for page in pdf_reader.pages:
+            
+            text += page.extract_text()
+        
+        text += "FIN DEL CV"
+            
+    text_splitter = CharacterTextSplitter(
+        separator="\n",
+        chunk_size=1000,
+        chunk_overlap=200,
+        length_function=len
+    )
+    chunks = text_splitter.split_text(text)
+    vectordb = FAISS.from_texts(texts=chunks, embedding=OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY))
 
     #qa marca es la herramienta con la que haremos retrieval de documentos, retorna texto
-    qa_marca = RetrievalQA.from_chain_type(llm=ChatOpenAI(model_name = "gpt-3.5-turbo-16k"), chain_type= "stuff", retriever = vectordb.as_retriever())
+    qa_marca = RetrievalQA.from_chain_type(llm=ChatOpenAI(openai_api_key=OPENAI_API_KEY,model_name = "gpt-3.5-turbo-16k"), chain_type= "stuff", retriever = vectordb.as_retriever())
     
     return qa_marca
 
 def chat_prompt():
     #Template del prompt que va a ser enviado al modelo de texto para que me regrese el mejor mensaje
-    template="""Eres un chatbot especializado en atención al cliente. Tu trabajo es responder al cliente de la manera mas concisa y segura posible. Este es el historial de mensajes:
+    template="""Eres un chatbot especializado en revisar y comprender CV, tu trabajo es ayudar a los reclutadores sobre los CV que se te presenta. Este es el historial de mensajes:
     {chat_history}
     Y esta es la información que recabaste para poder responder la pregunta:
     {qa_answer}
 
-    A continuacion esta el mensaje del cliente:
+    A continuacion esta el mensaje del responsable de recursos humanos:
     """
     system_message_prompt = SystemMessagePromptTemplate.from_template(template)
     human_template="{text}"
@@ -58,7 +73,7 @@ def chat_prompt():
 def chat_memory(qa_marca):
     #Inicializar la memoria
     memory = ConversationBufferMemory(memory_key="chat_history",input_key="text", return_messages=True)
-    chat=ChatOpenAI(temperature=0, model_name="gpt-3.5-turbo-16k")
+    chat=ChatOpenAI(openai_api_key=OPENAI_API_KEY,temperature=0, model_name="gpt-3.5-turbo-16k")
     chain = LLMChain(llm=chat, prompt=chat_prompt(), memory=memory, verbose=True)
     while True:
         pregunta = input()
